@@ -1,0 +1,61 @@
+{
+  "clientProfiles": [
+    {
+      "clientProfileName": "sensor-simulator-profile",
+      "allowGuaranteedMsgSendEnabled": true,
+      "allowGuaranteedMsgReceiveEnabled": true,
+      "allowGuaranteedEndpointCreateEnabled": true,
+      "allowGuaranteedEndpointCreateDurability": "non-durable",
+      "allowTransactedSessionsEnabled": false,
+      "allowBridgeConnectionsEnabled": false,
+      "allowSharedSubscriptionsEnabled": false,
+      "maxConnectionCountPerClientUsername": 10,
+      "maxEgressFlowCount": 1000,
+      "maxIngressFlowCount": 1000,
+      "maxSubscriptionCount": 500,
+      "maxTransactedSessionCount": 0,
+      "maxTransactionCount": 0,
+      "rejectMsgToSenderOnNoSubscriptionMatchEnabled": false,
+      "compressionEnabled": false,
+      "elidingEnabled": false
+    },
+    {
+      "clientProfileName": "api-controller-profile",
+      "allowGuaranteedMsgSendEnabled": true,
+      "allowGuaranteedMsgReceiveEnabled": true,
+      "allowGuaranteedEndpointCreateEnabled": true,
+      "allowGuaranteedEndpointCreateDurability": "non-durable",
+      "allowTransactedSessionsEnabled": false,
+      "allowBridgeConnectionsEnabled": false,
+      "allowSharedSubscriptionsEnabled": false,
+      "maxConnectionCountPerClientUsername": 5,
+      "maxEgressFlowCount": 100,
+      "maxIngressFlowCount": 100,
+      "maxSubscriptionCount": 50,
+      "maxTransactedSessionCount": 0,
+      "maxTransactionCount": 0,
+      "rejectMsgToSenderOnNoSubscriptionMatchEnabled": false,
+      "compressionEnabled": false,
+      "elidingEnabled": false
+    },
+    {
+      "clientProfileName": "consumer-profile",
+      "allowGuaranteedMsgSendEnabled": false,
+      "allowGuaranteedMsgReceiveEnabled": true,
+      "allowGuaranteedEndpointCreateEnabled": true,
+      "allowGuaranteedEndpointCreateDurability": "non-durable",
+      "allowTransactedSessionsEnabled": false,
+      "allowBridgeConnectionsEnabled": false,
+      "allowSharedSubscriptionsEnabled": false,
+      "maxConnectionCountPerClientUsername": 10,
+      "maxEgressFlowCount": 1000,
+      "maxIngressFlowCount": 1000,
+      "maxSubscriptionCount": 1000,
+      "maxTransactedSessionCount": 0,
+      "maxTransactionCount": 0,
+      "rejectMsgToSenderOnNoSubscriptionMatchEnabled": false,
+      "compressionEnabled": false,
+      "elidingEnabled": false
+    }
+  ]
+}

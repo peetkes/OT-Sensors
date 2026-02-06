@@ -1,0 +1,60 @@
+{
+  "aclProfiles": [
+    {
+      "aclProfileName": "sensor-simulator-acl",
+      "clientConnectDefaultAction": "allow",
+      "publishTopicDefaultAction": "disallow",
+      "subscribeTopicDefaultAction": "disallow",
+      "publishTopicExceptions": [
+        {
+          "publishTopicException": "sensors/reading/>",
+          "publishTopicExceptionSyntax": "smf"
+        },
+        {
+          "publishTopicException": "sensors/config/simulator",
+          "publishTopicExceptionSyntax": "smf"
+        }
+      ],
+      "subscribeTopicExceptions": [
+        {
+          "subscribeTopicException": "sensors/control/anomaly",
+          "subscribeTopicExceptionSyntax": "smf"
+        },
+        {
+          "subscribeTopicException": "sensors/control/simulator",
+          "subscribeTopicExceptionSyntax": "smf"
+        }
+      ]
+    },
+    {
+      "aclProfileName": "api-controller-acl",
+      "clientConnectDefaultAction": "allow",
+      "publishTopicDefaultAction": "disallow",
+      "subscribeTopicDefaultAction": "disallow",
+      "publishTopicExceptions": [
+        {
+          "publishTopicException": "sensors/control/>",
+          "publishTopicExceptionSyntax": "smf"
+        }
+      ],
+      "subscribeTopicExceptions": [
+        {
+          "subscribeTopicException": "sensors/config/simulator",
+          "subscribeTopicExceptionSyntax": "smf"
+        }
+      ]
+    },
+    {
+      "aclProfileName": "consumer-acl",
+      "clientConnectDefaultAction": "allow",
+      "publishTopicDefaultAction": "disallow",
+      "subscribeTopicDefaultAction": "disallow",
+      "subscribeTopicExceptions": [
+        {
+          "subscribeTopicException": "sensors/>",
+          "subscribeTopicExceptionSyntax": "smf"
+        }
+      ]
+    }
+  ]
+}

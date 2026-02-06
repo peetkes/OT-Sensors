@@ -1,0 +1,31 @@
+{
+  "clientUsernames": [
+    {
+      "clientUsername": "simulator",
+      "enabled": true,
+      "password": "simulator",
+      "aclProfileName": "sensor-simulator-acl",
+      "clientProfileName": "sensor-simulator-profile",
+      "guaranteedEndpointPermissionOverrideEnabled": false,
+      "subscriptionManagerEnabled": false
+    },
+    {
+      "clientUsername": "appuser",
+      "enabled": true,
+      "password": "MyUserPassword123!",
+      "aclProfileName": "api-controller-acl",
+      "clientProfileName": "api-controller-profile",
+      "guaranteedEndpointPermissionOverrideEnabled": false,
+      "subscriptionManagerEnabled": false
+    },
+    {
+      "clientUsername": "consumer",
+      "enabled": true,
+      "password": "consumer",
+      "aclProfileName": "consumer-acl",
+      "clientProfileName": "consumer-profile",
+      "guaranteedEndpointPermissionOverrideEnabled": false,
+      "subscriptionManagerEnabled": false
+    }
+  ]
+}
