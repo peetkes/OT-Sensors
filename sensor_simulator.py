@@ -42,6 +42,7 @@ class SensorSimulator:
                  reading_topic_prefix: str = "sensors/reading",
                  num_production_lines: int = 1,
                  num_temp_sensors: int = 10,
+                 num_pressure_sensors: int = 10,
                  num_vibration_sensors: int = 15,
                  num_hygiene_sensors: int = 5):
         """
@@ -56,6 +57,7 @@ class SensorSimulator:
             reading_topic_prefix: MQTT topic prefix for sensor readings (default "sensors/reading")
             num_production_lines: Number of production lines (default 1)
             num_temp_sensors: Temperature sensors per line (default 10)
+            num_pressure_sensors: Pressure sensors per line (default 10)
             num_vibration_sensors: Vibration sensors per line (default 15)
             num_hygiene_sensors: Hygiene sensors per line (default 5)
         """
@@ -81,6 +83,7 @@ class SensorSimulator:
         # Production line and sensor configurations
         self.num_production_lines = num_production_lines
         self.num_temp_sensors = num_temp_sensors
+        self.num_pressure_sensors = num_pressure_sensors
         self.num_vibration_sensors = num_vibration_sensors
         self.num_hygiene_sensors = num_hygiene_sensors
 
@@ -92,6 +95,8 @@ class SensorSimulator:
 
         # Base values for all sensors (unified dictionary)
         self.base_values: Dict[str, float] = {}
+        self.base_variation: Dict[str, float] = {}
+        self.sensor_units: Dict[str, str] = {}
 
         # Per-sensor anomaly tracking
         self.anomaly_enabled_sensors: Set[str] = set()  # Set of sensor IDs with anomalies enabled
@@ -111,6 +116,7 @@ class SensorSimulator:
             # Initialize sensor structure for this line
             self.sensors[line_id] = {
                 'temperature': [],
+                'pressure': [],
                 'vibration': [],
                 'hygiene': []
             }
@@ -121,6 +127,8 @@ class SensorSimulator:
                 full_sensor_id = f"{sensor_id}_{line_id}"
                 self.sensors[line_id]['temperature'].append(sensor_id)
                 self.base_values[full_sensor_id] = random.uniform(20.0, 25.0)
+                self.base_variation[full_sensor_id] = 0.5  # Set variation for temperature sensors
+                self.sensor_units=[full_sensor_id] = "°C"
 
             # Vibration sensors: normal range 0.5-2.0 mm/s
             for i in range(self.num_vibration_sensors):
@@ -128,6 +136,17 @@ class SensorSimulator:
                 full_sensor_id = f"{sensor_id}_{line_id}"
                 self.sensors[line_id]['vibration'].append(sensor_id)
                 self.base_values[full_sensor_id] = random.uniform(0.5, 2.0)
+                self.base_variation[full_sensor_id] = 0.1  # Set variation for vibration sensors
+                self.sensor_units[full_sensor_id] = "mm/s"
+
+            # Pressure sensors: normal range 100-120 kPa
+            for i in range(self.num_pressure_sensors):
+                sensor_id = f"P_{i+1:03d}"
+                full_sensor_id = f"{sensor_id}_{line_id}"
+                self.sensors[line_id]['pressure'].append(sensor_id)
+                self.base_values[full_sensor_id] = random.uniform(100.0, 120.0)
+                self.base_variation[full_sensor_id] = 2.0  # Set variation for pressure sensors
+                self.sensor_units
 
             # Hygiene sensors: normal range 40-60% humidity
             for i in range(self.num_hygiene_sensors):
@@ -135,7 +154,9 @@ class SensorSimulator:
                 full_sensor_id = f"{sensor_id}_{line_id}"
                 self.sensors[line_id]['hygiene'].append(sensor_id)
                 self.base_values[full_sensor_id] = random.uniform(40.0, 60.0)
-    
+                self.base_variation[full_sensor_id] = 2.0  # Set variation for hygiene sensors
+                self.sensor_units[full_sensor_id] = "% humidity"
+
     def on_connect(self, client, userdata, flags, rc):
         """Callback for when client connects to broker"""
         if rc == 0:
@@ -273,9 +294,10 @@ class SensorSimulator:
                 "sensors_per_line": {
                     "temperature": self.num_temp_sensors,
                     "vibration": self.num_vibration_sensors,
+                    "pressure": self.num_pressure_sensors,
                     "hygiene": self.num_hygiene_sensors
                 },
-                "total_sensors_per_line": self.num_temp_sensors + self.num_vibration_sensors + self.num_hygiene_sensors,
+                "total_sensors_per_line": self.num_temp_sensors + self.num_vibration_sensors + self.num_pressure_sensors + self.num_hygiene_sensors,
                 "sensor_details": self.sensors,
                 "timestamp": datetime.now(timezone.utc).isoformat()
             }
@@ -307,121 +329,45 @@ class SensorSimulator:
         self.client.loop_stop()
         self.client.disconnect()
         logger.info("Disconnected from broker")
-    
-    def generate_temperature_reading(self, line_id: str, sensor_id: str) -> SensorReading:
+
+    def generate_reading(self, line_id: str, sensor_id: str, source: str) -> SensorReading:
         """
-        Generate a temperature reading for a sensor
+        Generate a reading for a sensor
 
         Args:
             line_id: The production line identifier
             sensor_id: The sensor identifier (without line prefix)
-
+            source: The type of sensor (temperature | vibration | pressure | hygiene)
         Returns:
             SensorReading object
         """
         full_sensor_id = f"{sensor_id}_{line_id}"
-        base_temp = self.base_values[full_sensor_id]
+        base_value = self.base_values[full_sensor_id]
+        variation = self.base_variation[full_sensor_id]
+        unit = self.sensor_units.get(full_sensor_id, "")
 
         # Add small random variation
-        noise = random.uniform(-0.5, 0.5)
+        noise = random.uniform(-variation, variation)
 
         # Check if this sensor has anomaly enabled
         if full_sensor_id in self.anomaly_enabled_sensors:
             # Gradual increase over time
             anomaly_increment = self.anomaly_increments.get(full_sensor_id, 0.0)
-            temperature = base_temp + anomaly_increment + noise
+            value = base_value + anomaly_increment + noise
             status = "warning" if anomaly_increment > 5 else "normal"
         else:
-            temperature = base_temp + noise
+            value = base_value + noise
             status = "normal"
 
         return SensorReading(
-            sensor_id=sensor_id,
-            sensor_type="temperature",
-            value=round(temperature, 2),
-            unit="°C",
-            timestamp=datetime.now(timezone.utc).isoformat(),
-            status=status
-        )
-    
-    def generate_vibration_reading(self, line_id: str, sensor_id: str) -> SensorReading:
-        """
-        Generate a vibration reading for a sensor
-
-        Args:
-            line_id: The production line identifier
-            sensor_id: The sensor identifier (without line prefix)
-
-        Returns:
-            SensorReading object
-        """
-        full_sensor_id = f"{sensor_id}_{line_id}"
-        base_vibration = self.base_values[full_sensor_id]
-
-        # Add small random variation
-        noise = random.uniform(-0.1, 0.1)
-
-        # Check if this sensor has anomaly enabled
-        if full_sensor_id in self.anomaly_enabled_sensors:
-            # Gradual increase over time
-            anomaly_increment = self.anomaly_increments.get(full_sensor_id, 0.0)
-            vibration = base_vibration + (anomaly_increment * 0.3) + noise
-            status = "warning" if anomaly_increment > 5 else "normal"
-        else:
-            vibration = base_vibration + noise
-            status = "normal"
-
-        # Ensure vibration is non-negative
-        vibration = max(0.0, vibration)
-
-        return SensorReading(
-            sensor_id=sensor_id,
-            sensor_type="vibration",
-            value=round(vibration, 3),
-            unit="mm/s",
+            sensor_id=full_sensor_id,
+            source=source,
+            value=value,
+            unit=unit,
             timestamp=datetime.now(timezone.utc).isoformat(),
             status=status
         )
 
-    def generate_hygiene_reading(self, line_id: str, sensor_id: str) -> SensorReading:
-        """
-        Generate a hygiene reading for a sensor
-
-        Args:
-            line_id: The production line identifier
-            sensor_id: The sensor identifier (without line prefix)
-
-        Returns:
-            SensorReading object
-        """
-        full_sensor_id = f"{sensor_id}_{line_id}"
-        base_hygiene = self.base_values[full_sensor_id]
-
-        # Add small random variation
-        noise = random.uniform(-2.0, 2.0)
-
-        # Check if this sensor has anomaly enabled
-        if full_sensor_id in self.anomaly_enabled_sensors:
-            # Gradual drift from baseline
-            anomaly_increment = self.anomaly_increments.get(full_sensor_id, 0.0)
-            hygiene = base_hygiene + (anomaly_increment * 0.5) + noise
-            # Warning if outside normal range (40-60%)
-            status = "warning" if (hygiene < 40 or hygiene > 60) else "normal"
-        else:
-            hygiene = base_hygiene + noise
-            status = "normal"
-
-        # Ensure hygiene is within reasonable bounds (0-100%)
-        hygiene = max(0.0, min(100.0, hygiene))
-
-        return SensorReading(
-            sensor_id=sensor_id,
-            sensor_type="hygiene",
-            value=round(hygiene, 2),
-            unit="%",
-            timestamp=datetime.now(timezone.utc).isoformat(),
-            status=status
-        )
 
     def publish_reading(self, line_id: str, reading: SensorReading):
         """
@@ -432,13 +378,13 @@ class SensorSimulator:
             reading: SensorReading object to publish
         """
         # New hierarchical topic structure: {self.reading_topic_prefix}/{line}/{type}/{sensor_id}
-        topic = f"{self.reading_topic_prefix}/{line_id}/{reading.sensor_type}/{reading.sensor_id}"
+        topic = f"{self.reading_topic_prefix}/{line_id}/{reading.source}/{reading.sensor_id}"
         payload = json.dumps(asdict(reading))
 
         result = self.client.publish(topic, payload, qos=1)
 
         if result.rc == mqtt.MQTT_ERR_SUCCESS:
-            logger.info(f"Published {reading.sensor_type} reading on {line_id}: "
+            logger.info(f"Published {reading.source} reading on {line_id}: "
                        f"{reading.sensor_id} = {reading.value} {reading.unit} "
                        f"[{reading.status}]")
         else:
@@ -454,17 +400,22 @@ class SensorSimulator:
         for line_id in self.active_production_lines:
             # Publish temperature readings
             for sensor_id in self.sensors[line_id]['temperature']:
-                reading = self.generate_temperature_reading(line_id, sensor_id)
+                reading = self.generate_reading(line_id, sensor_id, "temperature")
                 self.publish_reading(line_id, reading)
 
             # Publish vibration readings
             for sensor_id in self.sensors[line_id]['vibration']:
-                reading = self.generate_vibration_reading(line_id, sensor_id)
+                reading = self.generate_reading(line_id, sensor_id, "vibration")
+                self.publish_reading(line_id, reading)
+
+            # Publish pressure readings
+            for sensor_id in self.sensors[line_id]['pressure']:
+                reading = self.generate_reading(line_id, sensor_id, "pressure")
                 self.publish_reading(line_id, reading)
 
             # Publish hygiene readings
             for sensor_id in self.sensors[line_id]['hygiene']:
-                reading = self.generate_hygiene_reading(line_id, sensor_id)
+                reading = self.generate_reading(line_id, sensor_id, "hygiene")
                 self.publish_reading(line_id, reading)
     
     def run(self, interval: int = 5, duration: int = None):
